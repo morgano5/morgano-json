@@ -226,6 +226,12 @@ public class ObjectSerializer {
 			objectStack.addFirst(object);
 		}
 
+		// special case: enums
+		if(Enum.class.isAssignableFrom(clazz)) {
+			writer.append('"').append(escapeString(object.toString())).append('"');
+			return;
+		}
+
 		// special case: collections
 		if(Collection.class.isAssignableFrom(clazz)) {
 			boolean first = true;

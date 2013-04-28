@@ -135,8 +135,24 @@ public class ObjectDeserializerTest {
 		assertEquals(3, (int)myClass.myMapOfIntegers.get("tres"));
 	}
 
+	@Test
+	public void enumTest1() throws JSONReaderException {
+		MyClass myClass = parseMyClass("{\"myEnum\": \"TWO\"}");
+		assertEquals(MyEnum.TWO, myClass.myEnum);
+	}
+
+	@Test
+	public void enumTest2() throws JSONReaderException {
+		MyClass myClass = parseMyClass("{\"myEnum\": 2}");
+		assertEquals(MyEnum.THREE, myClass.myEnum);
+	}
+
 	private MyClass parseMyClass(String json) throws JSONReaderException {
 		return ObjectDeserializer.getFromReader(new StringReader(json), MyClass.class);
+	}
+
+	public static enum MyEnum {
+		ONE, TWO, THREE
 	}
 
 	public static class MyClass {
@@ -154,6 +170,7 @@ public class ObjectDeserializerTest {
 		public Map<String, Integer> myMapOfIntegers;
 		public Map<String, Map<String, List<Byte>>> myComplexMap;
 		public MyClass myInternalClass;
+		public MyEnum myEnum;
 		public Object myObject;
 		private String myProperty;
 		public String getMyProperty() { return myProperty; }

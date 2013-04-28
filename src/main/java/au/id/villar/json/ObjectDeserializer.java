@@ -333,7 +333,8 @@ public class ObjectDeserializer {
 
 		private boolean isBasicType(Class<?> clazz) {
 			return clazz.isPrimitive() || Number.class.isAssignableFrom(clazz) || clazz == Boolean.class
-					|| clazz == Character.class || clazz == String.class || clazz == Date.class;
+					|| clazz == Character.class || clazz == String.class || clazz == Date.class
+					|| Enum.class.isAssignableFrom(clazz);
 		}
 
 		private static class PropertyInfo {
@@ -562,6 +563,12 @@ public class ObjectDeserializer {
 					String strValue = value.toString();
 					if(strValue.length() == 1) {
 						return (T)(Character)strValue.charAt(0);
+					}
+				} else if(Enum.class.isAssignableFrom(clazz)) {
+					if(valueClass == String.class) {
+						return (T)Enum.valueOf((Class<Enum>)clazz, value.toString());
+					} else if(valueClass == BigDecimal.class) {
+						return clazz.<T>getEnumConstants()[((BigDecimal)value).intValue()];
 					}
 				}
 				throw new JSONReaderException("object of type " + valueClass.getName() + " cannot be casted to type " + clazz.getName());

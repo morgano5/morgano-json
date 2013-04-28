@@ -503,6 +503,24 @@ public class ObjectSerializerTest {
 		assertEquals("{\"myString\":\"first line\\nsecond line\\nsome chars: \\u00F1\\u00D1\\tthis is after a tab\\n\\n...two lines after\"}", writer.getBuffer().toString());
 	}
 
+	enum MyTestEnum { ONE, TWO, THREE }
+
+	@Test
+	public void enumTest() throws IOException {
+
+		class MyClass { public int myInt; public MyTestEnum myEnumValue; }
+
+		MyClass object = new MyClass();
+		object.myEnumValue = MyTestEnum.TWO;
+		object.myInt = 2;
+
+		StringWriter writer = new StringWriter();
+
+		ObjectSerializer.write(object, writer);
+
+		assertEquals("{\"myInt\":2,\"myEnumValue\":\"TWO\"}", writer.getBuffer().toString());
+	}
+
 	private void checkExpected(String expected, String jsonResult) {
 		if(!jsonResult.contains(expected)) {
 			fail("JSON doesn't contain: " + expected);
