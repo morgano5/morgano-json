@@ -26,10 +26,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
-/**
- * Date: 28/04/12
- * Time: 9:17 PM
- */
 public class ObjectDeserializer {
 
 	public static Object getFromReader(Reader reader) throws JSONReaderException {
@@ -40,6 +36,26 @@ public class ObjectDeserializer {
 	public static <T> T getFromReader(Reader reader, Class<T> clazz) throws JSONReaderException {
 		if(clazz == null) {
 			return (T)getFromReader(reader);
+		} else if(clazz == String.class) {
+			return (T)internalGetFromReader(reader, null);
+		} else if(clazz == Boolean.class) {
+			return (T)Boolean.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == Byte.class) {
+			return (T)Byte.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == Short.class) {
+			return (T)Short.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == Integer.class) {
+			return (T)Integer.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == Long.class) {
+			return (T)Long.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == Float.class) {
+			return (T)Float.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == Double.class) {
+			return (T)Double.valueOf(internalGetFromReader(reader, null).toString());
+		} else if(clazz == BigInteger.class) {
+			return (T)new BigInteger(internalGetFromReader(reader, null).toString());
+		} else if(clazz == BigDecimal.class) {
+			return (T)new BigDecimal(internalGetFromReader(reader, null).toString());
 		}
 		try {
 			T object = clazz.newInstance();
@@ -88,7 +104,7 @@ public class ObjectDeserializer {
 		}
 
 		public Object getResult() throws JSONReaderException {
-			if(root != null && result != null) {
+			if(root != null && !root.equals("") && result != null) {
 				match(root, result);
 				result = root;
 			}
@@ -120,6 +136,18 @@ public class ObjectDeserializer {
 		public void simpleValue(StringBuilder name, StringBuilder strValue, ValueType type) throws JSONReaderException {
 
 			Object parent = objects.peekLast();
+
+			// no parent object, this is a root value by itself
+			if(parent == null) {
+				switch(type) {
+					case FALSE: result = Boolean.FALSE; return;
+					case TRUE: result = Boolean.TRUE; return;
+					case NULL: result = null; return;
+					case NUMBER: result = new BigDecimal(strValue.toString()); return;
+					case STRING: result = strValue.toString(); return;
+					default: throw new RuntimeException("programming error: type not known: " + type.name());
+				}
+			}
 
 			// assign to an object
 			if(name != null) {
@@ -287,7 +315,7 @@ public class ObjectDeserializer {
 						match(originalValue, value, originalValue.getClass().toString());
 					}
 				}
-			} else {
+			} else if(Map.class.isAssignableFrom(json.getClass())) {
 				Map<String, Object> mapJson = (Map)json;
 				for(String strProperty: mapJson.keySet()) {
 					Object property = mapJson.get(strProperty);
@@ -306,6 +334,8 @@ public class ObjectDeserializer {
 						match(info.value, property, info.strType);
 					}
 				}
+			} else {
+				json = json;
 			}
 		}
 

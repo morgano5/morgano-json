@@ -122,6 +122,7 @@ public class JSONReader {
 						fieldValue.delete(0, fieldValue.length()).append((char)readChar);
 						readChar = readRestOfNumber(fieldValue);
 						contentHandler.simpleValue(fieldNameNull? null: fieldName, fieldValue, ContentHandler.ValueType.NUMBER);
+						if(readChar == -1 && charStack.length() == 0) break;
 						fieldNameNull = true;
 						readToNextValue(readChar);
 						break;
@@ -294,7 +295,7 @@ public class JSONReader {
 			}
 			builder.append((char)readChar);
 		}
-		throw new JSONReaderException("unexpected end of data");
+		return -1;
 	}
 
 	private int readSkippingWhites() throws IOException, JSONReaderException {
