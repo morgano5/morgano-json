@@ -112,7 +112,7 @@ public class ObjectDeserializer {
 		}
 
 		@Override
-		public void startObject(StringBuilder name) throws JSONReaderException {
+		public void startObject(StringBuilder name) {
 			addToParentAndList(name == null? null: name.toString(), new HashMap<String, Object>(10));
 		}
 
