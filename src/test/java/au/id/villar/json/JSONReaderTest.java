@@ -110,6 +110,23 @@ public class JSONReaderTest {
         assertEquals(new Event(null, ContentHandler.ValueType.TRUE, null, EventType.SIMPLE_VALUE), result.get(0));
     }
 
+    @Test
+    public void lineAndColumnNumber() {
+
+        JSONReader reader = new JSONReader();
+        StringReader input = new StringReader("{\n\t\"uno\": 1,\n\t\"dos\": whatever\n\nneto llego aqui?");
+        TestContentHandler handler = new TestContentHandler();
+        TestErrorHandler errorHandler = new TestErrorHandler();
+        reader.setInput(input);
+        reader.setContentHandler(handler);
+        reader.setErrorHandler(errorHandler);
+        reader.parse();
+        JSONReaderException exception = errorHandler.getException();
+        assertNotNull(exception);
+        assertEquals(3, reader.getLineNumber());
+        assertEquals(9, reader.getColumnNumber());
+    }
+
 
     private List<Event> parse(String json) throws IOException, JSONReaderException {
         JSONReader reader = new JSONReader();

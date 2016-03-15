@@ -41,6 +41,26 @@ public class JSONReader {
     private StringBuilder fieldName = new StringBuilder(60);
     private boolean fieldNameNull = true;
 
+    private int lineNumber = 1;
+    private int columnNumber = 0;
+    private boolean lastWasCR = false;
+
+    /**
+     * Get the current line number being parsed in the input.
+     * @return The current line number being parsed in the input.
+     */
+    public int getLineNumber() {
+        return lineNumber;
+    }
+
+    /**
+     * Get the current column number being parsed in the input.
+     * @return The current column number being parsed in the input.
+     */
+    public int getColumnNumber() {
+        return columnNumber;
+    }
+
     /**
      * Sets the {@link ContentHandler} used to handle the events generated when invoking {@link JSONReader#parse()} on
      * this JSONReader.
@@ -138,7 +158,9 @@ public class JSONReader {
                         readToNextValue(readChar);
                         break;
                     default:
-                        throw new JSONReaderException("Unexpected character: [" + (char)readChar + "], value expected");
+                        throw new JSONReaderException(
+                                "Unexpected character: [" + (char)readChar + "], value expected, at line " + lineNumber
+                                        + ", column " + columnNumber);
                 }
             }
         } catch (JSONReaderException e) {
@@ -181,7 +203,9 @@ public class JSONReader {
                             } else if(readChar >= 'a' && readChar <= 'f') {
                                 hex |= (readChar - 87) << (4 * (3 - x));
                             } else {
-                                throw new JSONReaderException("expected hexadecimal digit, found instead: [" + readChar + "]");
+                                throw new JSONReaderException(
+                                        "Expected hexadecimal digit, found instead: [" + readChar + "], at line "
+                                                + lineNumber + ", column " + columnNumber);
                             }
                         }
                         builder.append(hex);
@@ -195,11 +219,13 @@ public class JSONReader {
             readChar = read();
         }
         if(readChar == -1)
-            throw new JSONReaderException("unexpected end of data");
+            throw new JSONReaderException("Unexpected end of data at line " + lineNumber + ", column " + columnNumber);
         if(readChar < 32)
-            throw new JSONReaderException("unexpected control character: [" + readChar + "]");
+            throw new JSONReaderException("Unexpected control character: [" + readChar + "] at line " + lineNumber
+                    + ", column " + columnNumber);
         if(readChar != '"')
-            throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+            throw new JSONReaderException("Unexpected character: [" + (char)readChar + "] at line " + lineNumber
+                    + ", column " + columnNumber);
     }
 
     private int readRestOfNumber(StringBuilder builder) throws IOException, JSONReaderException {
@@ -222,6 +248,9 @@ public class JSONReader {
             switch(status) {
                 case START_0:
                     switch(readChar) {
+                        case '\r': return '\r';
+                        case '\n': return '\n';
+                        case '\t': return '\t';
                         case ' ': return ' ';
                         case ',': return ',';
                         case '}': return '}';
@@ -229,7 +258,8 @@ public class JSONReader {
                         case '.': status = DOT; break;
                         case 'e': status = E; break;
                         case 'E': status = E; break;
-                        default: throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        default: throw new JSONReaderException("Unexpected character: [" + (char)readChar
+                                + "], at line " + lineNumber + ", column " + columnNumber);
                     }
                     break;
                 case START_MINUS:
@@ -237,13 +267,17 @@ public class JSONReader {
                         case '0': status = START_0; break;
                         case '1': case '2': case '3': case '4': case '5':
                         case '6': case '7': case '8': case '9': status = START_1_9; break;
-                        default: throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        default: throw new JSONReaderException("Unexpected character: [" + (char)readChar + "] at line "
+                                + lineNumber + ", column " + columnNumber);
                     }
                     break;
                 case START_1_9:
                     switch(readChar) {
                         case '0': case '1': case '2': case '3': case '4':
                         case '5': case '6': case '7': case '8': case '9': status = START_1_9; break;
+                        case '\r': return '\r';
+                        case '\n': return '\n';
+                        case '\t': return '\t';
                         case ' ': return ' ';
                         case ',': return ',';
                         case '}': return '}';
@@ -251,17 +285,22 @@ public class JSONReader {
                         case '.': status = DOT; break;
                         case 'e': status = E; break;
                         case 'E': status = E; break;
-                        default: throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        default: throw new JSONReaderException("Unexpected character: [" + (char)readChar
+                                + "], at line " + lineNumber + ", column " + columnNumber);
                     }
                     break;
                 case DOT:
                     if(readChar >= '0' && readChar <= '9')
                         status = FRACTION;
                     else
-                        throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        throw new JSONReaderException("Unexpected character: [" + (char)readChar + "], at line "
+                                + lineNumber + ", column " + columnNumber);
                     break;
                 case FRACTION:
                     switch(readChar) {
+                        case '\r': return '\r';
+                        case '\n': return '\n';
+                        case '\t': return '\t';
                         case ' ': return ' ';
                         case ',': return ',';
                         case '}': return '}';
@@ -270,7 +309,8 @@ public class JSONReader {
                         case '5': case '6': case '7': case '8': case '9': status = FRACTION; break;
                         case 'e': status = E; break;
                         case 'E': status = E; break;
-                        default: throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        default: throw new JSONReaderException("Unexpected character: [" + (char)readChar
+                                + "], at line " + lineNumber + ", column " + columnNumber);
                     }
                     break;
                 case E:
@@ -279,24 +319,30 @@ public class JSONReader {
                         case '-': status = EXPONENT_SIGN; break;
                         case '0': case '1': case '2': case '3': case '4':
                         case '5': case '6': case '7': case '8': case '9': status = EXPONENT; break;
-                        default: throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        default: throw new JSONReaderException("Unexpected character: [" + (char)readChar
+                                + "], at line " + lineNumber + ", column " + columnNumber);
                     }
                     break;
                 case EXPONENT_SIGN:
                     if(readChar >= '0' && readChar <= '9')
                         status = EXPONENT;
                     else
-                        throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        throw new JSONReaderException("Unexpected character: [" + (char)readChar
+                                + "], at line " + lineNumber + ", column " + columnNumber);
                     break;
                 case EXPONENT:
                     switch(readChar) {
                         case '0': case '1': case '2': case '3': case '4':
                         case '5': case '6': case '7': case '8': case '9': status = EXPONENT; break;
+                        case '\r': return '\r';
+                        case '\n': return '\n';
+                        case '\t': return '\t';
                         case ' ': return ' ';
                         case ',': return ',';
                         case '}': return '}';
                         case ']': return ']';
-                        default: throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                        default: throw new JSONReaderException("Unexpected character: [" + (char)readChar
+                                + "], at line " + lineNumber + ", column " + columnNumber);
                     }
                     break;
                 default:
@@ -307,23 +353,17 @@ public class JSONReader {
         return -1;
     }
 
-    private int readSkippingWhites() throws IOException, JSONReaderException {
-        int readChar;
-        do {readChar = read();} while (readChar == ' ' || readChar == '\n' || readChar == '\r' || readChar == '\t');
-        if(readChar == -1)
-            throw new JSONReaderException("unexpected end of data");
-        return readChar;
-    }
-
     private void verifyLiteral(String literal)
             throws IOException, JSONReaderException {
         for(int pos = 1; pos < literal.length(); pos++) {
             char charAtPos = literal.charAt(pos);
             int readChar = read();
             if(readChar == -1)
-                throw new JSONReaderException("unexpected end of data");
+                throw new JSONReaderException(
+                        "Unexpected end of data, at line " + lineNumber + ", column " + columnNumber);
             if(charAtPos != readChar)
-                throw new JSONReaderException("unknown literal. Expected: \"" + literal + "\"");
+                throw new JSONReaderException("Unknown literal. Expected: \"" + literal + "\", at line " + lineNumber
+                        + ", column " + columnNumber);
         }
     }
 
@@ -347,7 +387,8 @@ public class JSONReader {
                     break;
                 case ',':
                     if(lastCharPosition < 0) {
-                        throw new JSONReaderException("expected end of data, but still got a character: [,]");
+                        throw new JSONReaderException("Expected end of data, but still got a character: [,], at line "
+                                + lineNumber + ", column " + columnNumber);
                     }
                     last = charStack.charAt(lastCharPosition);
                     if(last == '{') {
@@ -360,35 +401,42 @@ public class JSONReader {
                     break;
                 case '}':
                     if(lastCharPosition < 0) {
-                        throw new JSONReaderException("expected end of data, but still got a character: [}]");
+                        throw new JSONReaderException("Expected end of data, but still got a character: [}], at line "
+                                + lineNumber + ", column " + columnNumber);
                     }
                     last = charStack.charAt(lastCharPosition);
                     charStack.delete(lastCharPosition, lastCharPosition + 1);
                     lastCharPosition--;
                     if(last != '{')
-                        throw new JSONReaderException("expected [,] or \"]\"");
+                        throw new JSONReaderException(
+                                "Expected [,] or \"]\", at line " + lineNumber  + ", column " + columnNumber);
                     contentHandler.endObject();
                     readChar = read();
                     break;
                 case ']':
                     if(lastCharPosition < 0) {
-                        throw new JSONReaderException("expected end of data, but still got a character: \"]\"");
+                        throw new JSONReaderException(
+                                "Expected end of data, but still got a character: \"]\", at line " + lineNumber
+                                + ", column " + columnNumber);
                     }
                     last = charStack.charAt(lastCharPosition);
                     charStack.delete(lastCharPosition, lastCharPosition + 1);
                     lastCharPosition--;
                     if(last != '[')
-                        throw new JSONReaderException("expected [,] or [}]");
+                        throw new JSONReaderException(
+                                "Expected [,] or [}], at line " + lineNumber + ", column " + columnNumber);
                     contentHandler.endArray();
                     readChar = read();
                     break;
                 case -1:
                     if(lastCharPosition > 0)
-                        throw new JSONReaderException("unexpected end of data");
+                        throw new JSONReaderException(
+                                "Unexpected end of data at line " + lineNumber + ", column " + columnNumber);
                     nextValue = true;
                     break;
                 default:
-                    throw new JSONReaderException("unexpected character: [" + (char)readChar + "]");
+                    throw new JSONReaderException("Unexpected character: [" + (char)readChar + "], at line "
+                            + lineNumber + ", column " + columnNumber);
             }
         }
     }
@@ -398,23 +446,44 @@ public class JSONReader {
         if(readChar == '}')
             return false;
         if(readChar != '"')
-            throw new JSONReaderException("expected: [\"]");
+            throw new JSONReaderException("expected: [\"], at line " + lineNumber + ", column " + columnNumber);
         fieldName.delete(0, fieldName.length());
         readRestOfString(fieldName);
         fieldNameNull = false;
         readChar = readSkippingWhites();
         if(readChar != ':')
-            throw new JSONReaderException("expected: [:]");
+            throw new JSONReaderException("expected: [:], at line " + lineNumber + ", column " + columnNumber);
         return true;
     }
 
+    private int readSkippingWhites() throws IOException, JSONReaderException {
+        int readChar;
+        do {readChar = read();} while (readChar == ' ' || readChar == '\n' || readChar == '\r' || readChar == '\t');
+        if(readChar == -1)
+            throw new JSONReaderException("Unexpected end of data, at line " + lineNumber + ", column " + columnNumber);
+        return readChar;
+    }
+
     private int read() throws IOException {
+
         if(bufferIndex >= bufferUsed) {
             bufferUsed = input.read(buffer);
             if (bufferUsed == -1) return -1;
             bufferIndex = 0;
         }
-        return buffer[bufferIndex++];
+
+        char read = buffer[bufferIndex++];
+
+        if(read == '\n' && !lastWasCR || read == '\r') {
+            lineNumber++;
+            columnNumber = 0;
+        } else {
+            columnNumber++;
+        }
+
+        lastWasCR = read == '\r';
+
+        return read;
     }
 
     private void verifyInputAndHandlersPresent() {

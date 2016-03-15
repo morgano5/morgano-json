@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
 package au.id.villar.json;
@@ -62,7 +61,7 @@ public interface ContentHandler {
      * input. If the object is found inside another object, then the given parameter will contain the name of the field
      * whose value is represented by the found object; otherwise the given parameter will be null.
      * @param name name of the field whose value is represented by this object if this is inside another object;
-     *             otherwise, null.
+     *             otherwise is null.
      * @throws JSONReaderException
      */
     void startObject(StringBuilder name) throws JSONReaderException;
@@ -78,7 +77,7 @@ public interface ContentHandler {
      * Called by {@link JSONReader} when the beginning of an array is detected. It happens when a '[' is read from the
      * input. If the array is found inside an object, then the given parameter will contain the name of the field
      * whose value is represented by the found array; otherwise the given parameter will be null.
-     * @param name name of the field whose value is represented by this array if this is inside an object; otherwise,
+     * @param name name of the field whose value is represented by this array if this is inside an object; otherwise is
      *             null.
      * @throws JSONReaderException
      */
@@ -91,8 +90,21 @@ public interface ContentHandler {
      */
     void endArray() throws JSONReaderException;
 
+    /**
+     * Called by {@link JSONReader} when a simple value is detected. If it is the value for a object's field then the
+     * name of the field is specified by the parameter "name"; otherwise it is null. If the value is a number or a
+     * string then the value itself is given in the parameter "value" and the value of "type" is NUMBER or STRING
+     * respectively. If the value is a boolean or null, then "value" is set to null and "type" will have the value (
+     * TRUE, FALSE or NULL)
+     * @param name name of the field whose value is represented by this value.
+     * @param value value itself if the type is {@link ValueType#STRING} or {@link ValueType#NUMBER}, null otherwise.
+     * @param type one of {@link ValueType#STRING}, {@link ValueType#NUMBER}, {@link ValueType#TRUE},
+     * {@link ValueType#FALSE} or {@link ValueType#NULL}
+     * @throws JSONReaderException
+     */
     void simpleValue(StringBuilder name, StringBuilder value, ValueType type) throws JSONReaderException;
 
+    /** Type of value that a field can be. */
     enum ValueType {
         STRING,
         NUMBER,
